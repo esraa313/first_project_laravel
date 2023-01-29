@@ -77,7 +77,13 @@ class PostController extends Controller
         ]);
     }
     public function store(request $request){
-        return "esraa";
+        return redirect()->route('posts');
+
+        
+    }
+    public function edit(request $request){
+        return redirect()->route('posts/create');
+
         
     }
 
@@ -107,7 +113,8 @@ public function destroy($postId){
         ];
         $postId--;
         return view('posts.destroy',function(){
-            unset($allPosts[$postId]);
+           
+            return redirect()->route('posts');
         }
         );
 
