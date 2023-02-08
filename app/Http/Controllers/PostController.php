@@ -1,121 +1,108 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use App\Models\User;
 use Illuminate\Http\Request;
+use App\Models\Post;
+use App\Http\Requests\StoreRequest;
 
 class PostController extends Controller
 {
-    public function index(request $request){
-        $allPosts = [
-            [
-            'id' => 1,
-            'title' => 'laravel',
-            'description' => 'Hello this is laravel post',
-            'posted_by' => 'ahmed' ,
-            'created_at' => '2022-02-28 10:05:55'
-            ],
-            [
-                'id' => 2,
-                'title' => 'php',
-                'description' => 'Hello this is php post',
-                'posted_by' => 'mazen' ,
-                'created_at' => '2021-02-28 10:05:55',
-            ],   [
-                'id' => 3,
-                'title' => 'javascript',
-                'description' => 'Hello this is javascript post',
-                'posted_by' => 'ibrahim' ,
-                'created_at' => '2012-02-28 10:05:55',
-            ]
-        
-            ];
-            if($request->query('id')){
-                $allPosts = array_filter($allPosts,function($id){
-                    return $id['id'] == request()->id;
-                });
-            }
+    public function index(){
+        $allPosts = Post::all();
+        return view('posts.index',['posts' => $allPosts ]);
 
-        return view('posts.index',[
-            'posts' => $allPosts
-        ]
-            );
     }
     public function create(){
-        return view('posts.create',[
-            
-        ]);
+      
+        return view('posts.create',);
+
     }
     public function show($postId){
-        $allPosts = [
-            [
-            'id' => 1,
-            'title' => 'laravel',
-            'description' => 'Hello this is laravel post',
-            'posted_by' => 'ahmed' ,
-            'created_at' => '2022-02-28 10:05:55'
-            ],
-            [
-                'id' => 2,
-                'title' => 'php',
-                'description' => 'Hello this is php post',
-                'posted_by' => 'mazen' ,
-                'created_at' => '2021-02-28 10:05:55',
-            ],   [
-                'id' => 3,
-                'title' => 'javascript',
-                'description' => 'Hello this is javascript post',
-                'posted_by' => 'ibrahim' ,
-                'created_at' => '2012-02-28 10:05:55',
-            ]
-        
-            ];
-            $postId--;
-        return view('posts.show',[
-            
-            'post' => $allPosts[$postId]
-        ]);
-    }
-    public function store(request $request){
-        return redirect()->route('posts');
-
-        
-    }
-    public function edit(request $request){
-        return redirect()->route('posts/create');
-
-        
-    }
-
-public function destroy($postId){
-    $allPosts = [
-        [
-        'id' => 1,
-        'title' => 'laravel',
-        'description' => 'Hello this is laravel post',
-        'posted_by' => 'ahmed' ,
-        'created_at' => '2022-02-28 10:05:55'
-        ],
-        [
-            'id' => 2,
-            'title' => 'php',
-            'description' => 'Hello this is php post',
-            'posted_by' => 'mazen' ,
-            'created_at' => '2021-02-28 10:05:55',
-        ],   [
-            'id' => 3,
-            'title' => 'javascript',
-            'description' => 'Hello this is javascript post',
-            'posted_by' => 'ibrahim' ,
-            'created_at' => '2012-02-28 10:05:55',
-        ]
+       
     
-        ];
-        $postId--;
-        return view('posts.destroy',function(){
-           
-            return redirect()->route('posts');
-        }
-        );
+        $post = Post::find($postId);
+     
+        return view('posts.show',[
+            'post' => $post
+        ]);
 
-}}
+    } 
+    public function store(StoreRequest $request){
+        // $request->validate([
+        //     'title' => 'required|unique:posts|min:3',
+        //     'description' => ['required','min:10'],
+        // ]);
+        $request->old('title');
+        $data = request()->all();
+        $title = $data['title'];
+        $description = $data['description'];
+        // $userId = $data['post_creater'];
+        Post::create([
+            'title' => $title ,
+            'description' => $description ,
+        // 'user_id' => $userId,
+            
+        ]);
+        return to_route(route:'posts.index');
+    }
+    public function edit($id){
+        $post = Post::find($id);
+        return view('posts.edit', ['post' => $post ]);
+}  
+
+ public function update($id,StoreRequest $request){
+    // dd( $id);
+    // $request->validate([
+    //     'title' => 'required|unique:posts|min:3',
+    //     'description' => ['required','min:10'],
+    // ]);
+    $post = Post::find($id);
+    // dd($post);
+    $post->update([
+        'title' => $request->title ,
+            'description' => $request->description ,
+            
+    ]);
+    // $post->title =  $request->title;
+    // $post->description =  $request->description;
+    // $post->created_at =  $request -> created_at;
+    // $post->updated_at =  $request -> updated_at;
+    // $post->save();
+    return redirect('posts');
+   
+}
+public function sluggable():array
+{
+    return[
+        'slug' => ['source' => 'title']
+    ];
+}
+
+public function destroy($id)
+{
+    $post = Post::findOrFail($id);
+
+    $post->delete();
+
+    return redirect()->route('posts.index');
+}
+public function restore()
+{
+    $allPosts = Post::onlyTrashed()->get();
+    return view('posts.restore', ['posts' => $allPosts,]);
+}
+public function reback($postId)
+{
+    Post::whereId($postId)->restore();
+    return back();
+}
+
+public function create()
+{
+    $users = User::get();
+    return view(view:'posts.create',[
+        'users' => $users,
+    ]);
+}
+}
